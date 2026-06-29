@@ -1,0 +1,41 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: clone-repository
+spec:
+  description: Clona o repositório Git informado para um workspace compartilhado.
+
+  params:
+    - name: repo-url
+      type: string
+      description: URL do repositório Git.
+    - name: branch
+      type: string
+      description: Branch que será clonada.
+      default: main
+
+  workspaces:
+    - name: source
+      description: Workspace onde o código-fonte será armazenado.
+
+  steps:
+    - name: clone
+      image: alpine/git:2.45.2
+      script: |
+        #!/bin/sh
+        set -eux
+
+        echo "Limpando workspace..."
+        rm -rf "$(workspaces.source.path)"/* "$(workspaces.source.path)"/.[!.]* "$(workspaces.source.path)"/..?* || true
+
+        echo "Clonando repositório: $(params.repo-url)"
+        echo "Branch: $(params.branch)"
+
+        git clone \
+          --branch "$(params.branch)" \
+          --single-branch \
+          "$(params.repo-url)" \
+          "$(workspaces.source.path)"
+
+        echo "Conteúdo clonado:"
+        ls -la "$(workspaces.source.path)"

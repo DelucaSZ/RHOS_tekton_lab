@@ -1,0 +1,33 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: flask-app-manual-run-
+spec:
+  serviceAccountName: pipeline
+
+  pipelineRef:
+    name: flask-app-pipeline
+
+  params:
+    - name: repo-url
+      value: https://github.com/DelucaSZ/RHOS_tekton_lab.git
+    - name: branch
+      value: main
+    - name: app-name
+      value: flask-app
+    - name: image-tag
+      value: manual-v1
+    - name: context-dir
+      value: app
+    - name: dockerfile-path
+      value: app/Dockerfile
+
+  workspaces:
+    - name: shared-workspace
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi

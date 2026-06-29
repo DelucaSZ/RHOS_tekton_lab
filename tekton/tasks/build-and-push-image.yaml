@@ -1,0 +1,62 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: build-and-push-image
+spec:
+  description: Builda a imagem da aplicação com Buildah e envia para o registry interno do OpenShift.
+
+  params:
+    - name: image
+      type: string
+      description: Imagem completa que será gerada e enviada para o registry.
+    - name: context-dir
+      type: string
+      description: Diretório de contexto do build.
+      default: app
+    - name: dockerfile-path
+      type: string
+      description: Caminho do Dockerfile dentro do repositório.
+      default: app/Dockerfile
+
+  workspaces:
+    - name: source
+      description: Workspace com o código-fonte clonado.
+
+  steps:
+    - name: build-and-push
+      image: quay.io/buildah/stable:v1.37
+      securityContext:
+        privileged: true
+      env:
+        - name: REGISTRY
+          value: image-registry.openshift-image-registry.svc:5000
+      script: |
+        #!/bin/sh
+        set -eux
+
+        echo "Autenticando no registry interno do OpenShift..."
+        TOKEN="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
+
+        buildah login \
+          --tls-verify=false \
+          -u pipeline \
+          -p "${TOKEN}" \
+          "${REGISTRY}"
+
+        echo "Buildando imagem:"
+        echo "$(params.image)"
+
+        buildah bud \
+          --tls-verify=false \
+          --format=docker \
+          -f "$(workspaces.source.path)/$(params.dockerfile-path)" \
+          -t "$(params.image)" \
+          "$(workspaces.source.path)/$(params.context-dir)"
+
+        echo "Enviando imagem para o registry..."
+        buildah push \
+          --tls-verify=false \
+          "$(params.image)"
+
+        echo "Imagem enviada com sucesso:"
+        echo "$(params.image)"

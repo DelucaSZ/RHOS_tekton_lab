@@ -1,0 +1,45 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: deploy-to-openshift
+spec:
+  description: Atualiza o Deployment da aplicação no OpenShift com a nova imagem.
+
+  params:
+    - name: app-name
+      type: string
+      description: Nome do Deployment da aplicação.
+    - name: image
+      type: string
+      description: Nova imagem que será aplicada no Deployment.
+
+  steps:
+    - name: deploy
+      image: quay.io/openshift/origin-cli:4.16
+      script: |
+        #!/bin/sh
+        set -eux
+
+        NAMESPACE="$(context.taskRun.namespace)"
+
+        echo "Namespace:"
+        echo "${NAMESPACE}"
+
+        echo "Atualizando deployment: $(params.app-name)"
+        echo "Nova imagem: $(params.image)"
+
+        oc patch deployment "$(params.app-name)" \
+          -n "${NAMESPACE}" \
+          --type=json \
+          -p='[
+            {
+              "op": "replace",
+              "path": "/spec/template/spec/containers/0/image",
+              "value": "$(params.image)"
+            }
+          ]'
+
+        echo "Aguardando rollout..."
+        oc rollout status deployment/"$(params.app-name)" -n "${NAMESPACE}"
+
+        echo "Deploy finalizado com sucesso."

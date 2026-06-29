@@ -1,59 +1,75 @@
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-  name: flask-build-pipeline
+  name: flask-app-pipeline
 spec:
-  workspaces:
-    - name: source
+  description: Pipeline manual para clonar, buildar, enviar imagem ao registry interno e atualizar o app no OpenShift.
 
   params:
-    - name: git-url
+    - name: repo-url
       type: string
-    - name: git-revision
+      description: URL do repositório Git.
+    - name: branch
       type: string
+      description: Branch que será usada no clone.
       default: main
-    - name: image-url
+    - name: app-name
       type: string
+      description: Nome da aplicação/deployment.
+      default: flask-app
+    - name: image-tag
+      type: string
+      description: Tag da imagem que será gerada.
+      default: latest
+    - name: context-dir
+      type: string
+      description: Diretório de contexto do build.
+      default: app
+    - name: dockerfile-path
+      type: string
+      description: Caminho do Dockerfile.
+      default: app/Dockerfile
+
+  workspaces:
+    - name: shared-workspace
+      description: Workspace compartilhado entre clone, build e deploy.
 
   tasks:
     - name: clone-repository
       taskRef:
-        resolver: cluster
-        params:
-          - name: kind
-            value: task
-          - name: name
-            value: git-clone
-          - name: namespace
-            value: openshift-pipelines
-      workspaces:
-        - name: output
-          workspace: source
+        name: clone-repository
       params:
-        - name: URL
-          value: $(params.git-url)
-        - name: REVISION
-          value: $(params.git-revision)
-        - name: DELETE_EXISTING
-          value: "true"
-
-    - name: build-and-push
-      runAfter:
-        - clone-repository
-      taskRef:
-        resolver: cluster
-        params:
-          - name: kind
-            value: task
-          - name: name
-            value: buildah
-          - name: namespace
-            value: openshift-pipelines
+        - name: repo-url
+          value: $(params.repo-url)
+        - name: branch
+          value: $(params.branch)
       workspaces:
         - name: source
-          workspace: source
+          workspace: shared-workspace
+
+    - name: build-and-push-image
+      taskRef:
+        name: build-and-push-image
+      runAfter:
+        - clone-repository
       params:
-        - name: IMAGE
-          value: $(params.image-url)
-        - name: TLSVERIFY
-          value: "false"
+        - name: image
+          value: image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/$(params.app-name):$(params.image-tag)
+        - name: context-dir
+          value: $(params.context-dir)
+        - name: dockerfile-path
+          value: $(params.dockerfile-path)
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: deploy-to-openshift
+      taskRef:
+        name: deploy-to-openshift
+      runAfter:
+        - build-and-push-image
+      params:
+        - name: app-name
+          value: $(params.app-name)
+        - name: image
+          value: image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/$(params.app-name):$(params.image-tag)
