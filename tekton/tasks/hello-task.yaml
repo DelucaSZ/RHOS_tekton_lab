@@ -1,0 +1,10 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: hello
+spec:
+  steps:
+    - name: echo
+      image: registry.access.redhat.com/ubi9/ubi-minimal
+      script: |
+        echo "Tekton funcionando no OpenShift Local"
