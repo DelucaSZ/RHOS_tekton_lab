@@ -1,0 +1,35 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: github-push-template
+spec:
+  params:
+    - name: git-repo-url
+    - name: git-revision
+    - name: git-commit
+    - name: git-repository-name
+    - name: git-repository-full-name
+
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: flask-app-github-run-
+        labels:
+          app: flask-app
+          trigger: github-push
+          repository: "$(tt.params.git-repository-name)"
+          commit: "$(tt.params.git-commit)"
+      spec:
+        serviceAccountName: pipeline
+        pipelineRef:
+          name: flask-app-pipeline
+        params:
+          - name: repo-url
+            value: "$(tt.params.git-repo-url)"
+
+          - name: branch
+            value: "$(tt.params.git-revision)"
+
+          - name: image
+            value: "image-registry.openshift-image-registry.svc:5000/tekton-lab/flask-app:latest"

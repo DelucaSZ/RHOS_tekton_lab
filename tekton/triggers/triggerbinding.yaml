@@ -1,0 +1,20 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: github-push-binding
+spec:
+  params:
+    - name: git-repo-url
+      value: "$(body.repository.clone_url)"
+
+    - name: git-revision
+      value: "$(extensions.branch)"
+
+    - name: git-commit
+      value: "$(body.after)"
+
+    - name: git-repository-name
+      value: "$(body.repository.name)"
+
+    - name: git-repository-full-name
+      value: "$(body.repository.full_name)"
