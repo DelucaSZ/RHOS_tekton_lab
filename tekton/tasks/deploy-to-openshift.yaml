@@ -42,4 +42,7 @@ spec:
         echo "Aguardando rollout..."
         oc rollout status deployment/"$(params.app-name)" -n "${NAMESPACE}"
 
+        oc rollout restart deployment/flask-app
+        oc rollout status deployment/flask-app
+
         echo "Deploy finalizado com sucesso."
