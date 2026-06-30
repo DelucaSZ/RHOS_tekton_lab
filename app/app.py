@@ -8,7 +8,7 @@ def home():
     return f"""
     <h1>OpenShift + Tekton Lab</h1>
 
-    <b>Versão:</b> 1.0<br>
+    <b>Versão:</b> 2.0<br>
     <b>Hostname:</b> {socket.gethostname()}
     """
 
