@@ -39,10 +39,10 @@ spec:
             }
           ]'
 
-        echo "Aguardando rollout..."
-        oc rollout status deployment/"$(params.app-name)" -n "${NAMESPACE}"
+        echo "Forçando restart do Deployment para carregar a imagem mais recente..."
+        oc rollout restart deployment/"$(params.app-name)" -n "${NAMESPACE}"
 
-        oc rollout restart deployment/flask-app
-        oc rollout status deployment/flask-app
+        echo "Aguardando rollout..."
+        oc rollout status deployment/"$(params.app-name)" -n "${NAMESPACE}" --timeout=180s
 
         echo "Deploy finalizado com sucesso."
