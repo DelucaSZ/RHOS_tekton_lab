@@ -1,5 +1,7 @@
 # OpenShift Tekton CI/CD Lab
 
+## by: delucasz
+
 Projeto prático de CI/CD utilizando **Red Hat OpenShift**, **Tekton Pipelines**, **Tekton Triggers** e **GitHub Webhook** para automatizar o build e deploy de uma aplicação Flask containerizada.
 
 O fluxo implementado permite que um `git push` no GitHub dispare automaticamente uma Pipeline Tekton dentro do OpenShift, realizando clone do repositório, build da imagem, push para o registry interno e deploy da aplicação.
